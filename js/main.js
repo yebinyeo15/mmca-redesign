@@ -1,33 +1,50 @@
-const li1 = document.querySelector('.main .con2 ul li:first-child');
-const li2 = document.querySelector('.main .con2 ul li:last-child');
-const con2 = document.querySelector('.main .con2');
+const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+const desktopPointerQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+let lenis = null;
 
-if (li1 && li2 && con2) {
-    const defaultExhibitionBackground = './images/mmca-con1-bg.png';
-    const setExhibitionBackground = (imagePath) => {
-        con2.style.backgroundImage = `url('${imagePath}')`;
-    };
-    const resetExhibitionBackground = () => {
-        setExhibitionBackground(defaultExhibitionBackground);
-    };
+const setupSmoothScroll = () => {
+    const shouldUseLenis = desktopPointerQuery.matches && !reducedMotionQuery.matches;
 
-    li1.addEventListener('mouseenter', () => {
-        setExhibitionBackground('./images/mmca-con1-current.png');
+    if (!shouldUseLenis || typeof Lenis === 'undefined') {
+        lenis?.destroy();
+        lenis = null;
+        return;
+    }
+
+    if (lenis) return;
+
+    lenis = new Lenis({
+        duration: 1.15,
+        wheelMultiplier: 1.0,
+        smoothWheel: true,
+        syncTouch: false,
+        autoRaf: true,
+        anchors: {
+            duration: 1.15,
+        },
     });
-    li2.addEventListener('mouseenter', () => {
-        setExhibitionBackground('./images/mmca-con1-upcoming.png');
-    });
-    li1.addEventListener('mouseleave', resetExhibitionBackground);
-    li2.addEventListener('mouseleave', resetExhibitionBackground);
-    li1.addEventListener('focusin', () => {
-        setExhibitionBackground('./images/mmca-con1-current.png');
-    });
-    li2.addEventListener('focusin', () => {
-        setExhibitionBackground('./images/mmca-con1-upcoming.png');
-    });
-    li1.addEventListener('focusout', resetExhibitionBackground);
-    li2.addEventListener('focusout', resetExhibitionBackground);
-}
+};
+
+setupSmoothScroll();
+reducedMotionQuery.addEventListener('change', setupSmoothScroll);
+desktopPointerQuery.addEventListener('change', setupSmoothScroll);
+
+document.addEventListener('click', (event) => {
+    if (lenis || reducedMotionQuery.matches) return;
+
+    const anchor = event.target.closest('a[href^="#"]');
+    if (!anchor) return;
+
+    const hash = anchor.getAttribute('href');
+    const target = hash === '#'
+        ? document.documentElement
+        : document.getElementById(decodeURIComponent(hash.slice(1)));
+
+    if (!target) return;
+
+    event.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 const heroSwiper = new Swiper('.hero-swiper', {
     loop: true,
